@@ -1,0 +1,61 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library", "go_test")
+load("@rules_pkg//pkg:pkg.bzl", "pkg_zip")
+load("@bazel_gazelle//:def.bzl", "gazelle")
+
+# gazelle:prefix github.com/kindlyops/pipeline-monitor
+gazelle(name = "gazelle")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["main.go"],
+    importpath = "github.com/kindlyops/pipeline-monitor",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_github_aws_aws_lambda_go//events:go_default_library",
+        "@com_github_aws_aws_lambda_go//lambda:go_default_library",
+        "@com_github_aws_aws_sdk_go//aws:go_default_library",
+        "@com_github_aws_aws_sdk_go//aws/endpoints:go_default_library",
+        "@com_github_aws_aws_sdk_go//aws/session:go_default_library",
+        "@com_github_aws_aws_sdk_go//service/codepipeline:go_default_library",
+        "@com_github_aws_aws_sdk_go//service/secretsmanager:go_default_library",
+        "@com_github_google_go_github//github:go_default_library",
+        "@org_golang_x_oauth2//:go_default_library",
+    ],
+)
+
+# override goos and goarch because this artifact is intended for AWS Lambda
+# and must always be compiled for linux_amd64
+go_binary(
+    name = "pipelinemonitor",
+    embed = [":go_default_library"],
+    goarch = "amd64",
+    goos = "linux",
+    tags = ["manual"],
+    visibility = ["//visibility:private"],
+)
+
+go_test(
+    name = "pipelinemonitor_test",
+    srcs = ["main_test.go"],
+    embed = [":go_default_library"],
+    deps = [
+        "@com_github_stretchr_testify//assert:go_default_library",
+    ],
+)
+
+pkg_zip(
+    name = "lambda_deploy",
+    srcs = [
+        ":pipelinemonitor",
+    ],
+    build_zip = "@rules_pkg//pkg:build_zip",
+    timestamp = 0,
+    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["main_test.go"],
+    embed = [":go_default_library"],
+    deps = ["@com_github_stretchr_testify//assert:go_default_library"],
+)
