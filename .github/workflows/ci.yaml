@@ -30,10 +30,9 @@ jobs:
         uses: ngalaiko/bazel-action@0.29.0
         with:
           args: run //scripts:syncdeps
-      - name: Commit Dependencies
+      - uses: stefanzweifel/git-auto-commit-action@v2.1.0
+        with:
+          commit_message: Apply syncdeps changes
+          branch: ${{ github.head_ref }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          # TODO: we could only run this when the actor is dependabot-preview
-          echo "Github event path is $GITHUB_EVENT_PATH"
-          ./scripts/commit-syncdeps.sh
