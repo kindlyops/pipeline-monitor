@@ -4,9 +4,6 @@ on:
   pull_request:
     branches:
       - master
-  push:
-    branches:
-      - master
 
 jobs:
   build:
@@ -23,3 +20,20 @@ jobs:
         uses: ngalaiko/bazel-action@0.29.0
         with:
           args: test //...
+  syncdeps:
+    name: SyncDeps
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v1
+      - name: Sync Dependencies
+        uses: ngalaiko/bazel-action@0.29.0
+        with:
+          args: run //scripts:syncdeps
+      - name: Commit Dependencies
+        run: |
+          # TODO: we could only run this when the actor is dependabot-preview
+          if 
+          command -v jq
+          jq < $GITHUB_EVENT_PATH
+          ./scripts/commit-syncdeps.sh

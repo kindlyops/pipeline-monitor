@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -euo pipefile
+set -euo pipefail
 
 export RUNFILES_DIR="$PWD/.."
 export PATH="$PWD/external/go_sdk/bin:$PATH"
