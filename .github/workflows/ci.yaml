@@ -31,8 +31,9 @@ jobs:
         with:
           args: run //scripts:syncdeps
       - name: Commit Dependencies
+        env:
+          GITHUB_EVENT_PATH: $GITHBU
         run: |
           # TODO: we could only run this when the actor is dependabot-preview
-          command -v jq
-          jq < $GITHUB_EVENT_PATH
-          #./scripts/commit-syncdeps.sh
+          echo "Github event path is $GITHUB_EVENT_PATH"
+          ./scripts/commit-syncdeps.sh
