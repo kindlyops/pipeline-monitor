@@ -23,5 +23,7 @@ jobs:
       - name: golangci-lint
         uses: reviewdog/action-golangci-lint@v1
         with:
+          reporter: github-pr-review
           github_token: ${{ secrets.github_token }}
           config: .golangci.yml
+          level: warning
