@@ -33,7 +33,6 @@ jobs:
       - name: Commit Dependencies
         run: |
           # TODO: we could only run this when the actor is dependabot-preview
-          if 
           command -v jq
           jq < $GITHUB_EVENT_PATH
           #./scripts/commit-syncdeps.sh
