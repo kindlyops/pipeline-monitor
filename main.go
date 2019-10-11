@@ -32,8 +32,8 @@ type CodePipelineNotificationDetail struct {
 // load the GitHub Oauth token when the lambda is loaded, not on every execution
 // this reduces the call volume into SecretsManager
 var (
-	gitHubToken string = ""
-	state       string = ""
+	gitHubToken string
+	state       string
 )
 
 type secretToken struct {
