@@ -36,4 +36,4 @@ jobs:
           if 
           command -v jq
           jq < $GITHUB_EVENT_PATH
-          ./scripts/commit-syncdeps.sh
+          #./scripts/commit-syncdeps.sh
