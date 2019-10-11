@@ -10,7 +10,7 @@ echo "Using these commands"
 command -v go
 echo "$gazelle"
 
-
+cd "$BUILD_WORKSPACE_DIRECTORY"
 go mod tidy
 go mod vendor
 $gazelle update-repos -from_file=go.mod
