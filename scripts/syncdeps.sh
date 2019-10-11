@@ -11,6 +11,6 @@ command -v go
 echo "$gazelle"
 
 
-go tidy
+go mod tidy
 go mod vendor
 $gazelle update-repos -from_file=go.mod
