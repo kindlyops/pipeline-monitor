@@ -14,5 +14,6 @@ bazel-bin
 bazel-out
 bazel-testlogs
 bazel-pipeline-monitor
+bazel-workspace
 bazel-genfiles
 pipeline-monitor
