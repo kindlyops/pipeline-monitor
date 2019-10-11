@@ -23,6 +23,7 @@ if ! git diff --quiet
 then
     echo "Committing changes from syncdeps"
     # shellcheck disable=SC2046
+    echo "github ref is $GITHUB_REF"
     PUSH_BRANCH=$(echo "$GITHUB_REF" | awk -F / '{ print $3 }')
     echo "Push branch is $PUSH_BRANCH"
     git checkout "$PUSH_BRANCH"
