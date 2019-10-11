@@ -11,7 +11,7 @@ if ! git diff --quiet
 then
     echo "Committing changes from syncdeps"
     # shellcheck disable=SC2046
-    PUSH_BRANCH:=$(echo "$GITHUB_REF" | awk -F / '{ print $3 }')
+    PUSH_BRANCH=$(echo "$GITHUB_REF" | awk -F / '{ print $3 }')
     git checkout "$PUSH_BRANCH"
     git add WORKSPACE
     git commit -m "Committing changes from syncdeps (go mod vendor && gazelle)"
