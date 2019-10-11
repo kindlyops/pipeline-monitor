@@ -16,15 +16,15 @@ then
     git add WORKSPACE
     git commit -m "Committing changes from syncdeps (go mod vendor && gazelle)"
 
-    cat <<- EOF > $HOME/.netrc
+    cat <<- EOF > "$HOME/.netrc"
     machine github.com
-    login $GITHUB_ACTOR
+    login $GITHUB_ACTOR"
     password $GITHUB_TOKEN
     machine api.github.com
     login $GITHUB_ACTOR
     password $GITHUB_TOKEN
 EOF
-    chmod 600 $HOME/.netrc
+    chmod 600 "$HOME/.netrc"
 
     git push origin "$PUSH_BRANCH"
 else
