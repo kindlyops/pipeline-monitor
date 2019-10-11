@@ -25,6 +25,6 @@ jobs:
         with:
           args: build //...
       - name: Test
-        uses: ngalaiko/bazel-actions@0.29.0
+        uses: ngalaiko/bazel-action@0.29.0
         with:
           args: test //...
