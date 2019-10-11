@@ -32,7 +32,7 @@ jobs:
           args: run //scripts:syncdeps
       - name: Commit Dependencies
         env:
-          GITHUB_EVENT_PATH: $GITHBU
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # TODO: we could only run this when the actor is dependabot-preview
           echo "Github event path is $GITHUB_EVENT_PATH"

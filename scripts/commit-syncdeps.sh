@@ -5,6 +5,8 @@ set -euo pipefail
 git config --global user.email "$GITHUB_ACTOR@users.noreply.github.com"
 git config --global user.name "$GITHUB_ACTOR"
 
+echo "Github event path is $GITHUB_EVENT_PATH"
+
 cat <<- EOF > "$HOME/.netrc"
 machine github.com
 login $GITHUB_ACTOR"
