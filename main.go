@@ -137,7 +137,7 @@ func translateStatus(status string) string {
 func getRevisionID(input executionDetails) (*revisionInfo, error) {
 	sess := session.Must(session.NewSession())
 
-	// TODO: use an interface so that this can be mocked/tested
+	// change this to use an interface so that this can be mocked/tested
 	// https://docs.aws.amazon.com/sdk-for-go/api/service/codepipeline/codepipelineiface/
 	svc := codepipeline.New(sess)
 
@@ -182,7 +182,7 @@ type statusInfo struct {
 	label       string
 }
 
-func updateGitHubStatus(status statusInfo) error {
+func updateGitHubStatus(status *statusInfo) error {
 	// guidance on auth from https://github.com/google/go-github#authentication
 	ctx := context.Background()
 	ts := oauth2.StaticTokenSource(
@@ -232,6 +232,7 @@ func HandleRequest(ctx context.Context, request events.CloudWatchEvent) error {
 		log.Printf("Ignoring %s", request.DetailType)
 		return nil
 	}
+
 	log.Printf("Processing %s", request.DetailType)
 
 	details := executionDetails{
@@ -282,7 +283,7 @@ func HandleRequest(ctx context.Context, request events.CloudWatchEvent) error {
 		description: statusDescription,
 	}
 
-	err = updateGitHubStatus(commitStatus)
+	err = updateGitHubStatus(&commitStatus)
 
 	if err != nil {
 		log.Printf("Error updating GitHub commit status: %s", err.Error())
