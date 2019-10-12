@@ -23,28 +23,18 @@ import (
 	"golang.org/x/oauth2"
 )
 
-// CodePipelineNotificationDetail contains state detail about CodePipeline jobs
-type CodePipelineNotificationDetail struct {
-	Pipeline string `json:"pipeline"`
-	State    string `json:"state"`
-}
-
 // load the GitHub Oauth token when the lambda is loaded, not on every execution
 // this reduces the call volume into SecretsManager
-var (
-	gitHubToken string = ""
-	state       string = ""
-)
+var gitHubToken string
 
 type secretToken struct {
 	Token string `json:"token"`
 }
 
 func getGitHubToken() (string, error) {
-
 	secretName := os.Getenv("SECRETSMANAGER_GITHUBTOKEN_NAME")
 	if secretName == "" {
-		err := fmt.Errorf("Couln't find SECRETSMANAGER_GITHUBTOKEN_NAME in environment.")
+		err := fmt.Errorf("couldn't find SECRETSMANAGER_GITHUBTOKEN_NAME in environment")
 		return "", err
 	}
 
@@ -66,6 +56,7 @@ func getGitHubToken() (string, error) {
 
 	var token secretToken
 	err = json.Unmarshal([]byte(*result.SecretString), &token)
+
 	if err != nil {
 		err = fmt.Errorf("unable to unmarshal secret token: %v", err.Error())
 		return "", err
@@ -90,21 +81,24 @@ func parseRevisionURL(revisionURL string) (revisionInfo, error) {
 	// "https://github.com/owner/repo/commit/8873423234re34ea1daewerwe93f92d1557a7b9b"
 	u, err := url.Parse(revisionURL)
 	if err != nil {
-		err = fmt.Errorf("Failed to parse revision URL: %s", err.Error())
+		err = fmt.Errorf("failed to parse revision URL: %s", err.Error())
 		return revisionInfo{}, err
 	}
 
 	var commitMatcher = regexp.MustCompile(`/(?P<owner>[\w-]+)/(?P<repo>[\w-]+)/commit/(?P<commit>\w+)$`)
+
 	var expectedMatches = commitMatcher.NumSubexp() + 1
 
 	match := commitMatcher.FindStringSubmatch(u.Path)
 
 	if len(match) != expectedMatches {
-		err = fmt.Errorf("Failed to parse revision URL, expected %v matches for %s and got %v.",
+		err = fmt.Errorf("failed to parse revision URL, expected %v matches for %s and got %v",
 			expectedMatches, u.Path, len(match))
 		return revisionInfo{}, err
 	}
+
 	matches := make(map[string]string)
+
 	for i, name := range commitMatcher.SubexpNames() {
 		if i != 0 && name != "" {
 			matches[name] = match[i]
@@ -125,6 +119,7 @@ func parseRevisionURL(revisionURL string) (revisionInfo, error) {
 // https://docs.aws.amazon.com/codepipeline/latest/APIReference/API_ActionExecution.html
 func translateStatus(status string) string {
 	var actionState string
+
 	switch status {
 	case "STARTED":
 		actionState = "pending"
@@ -135,14 +130,14 @@ func translateStatus(status string) string {
 	default:
 		actionState = "error"
 	}
+
 	return actionState
 }
 
 func getRevisionID(input executionDetails) (*revisionInfo, error) {
-
 	sess := session.Must(session.NewSession())
 
-	// TODO: use an interface so that this can be mocked/tested
+	// change this to use an interface so that this can be mocked/tested
 	// https://docs.aws.amazon.com/sdk-for-go/api/service/codepipeline/codepipelineiface/
 	svc := codepipeline.New(sess)
 
@@ -161,15 +156,16 @@ func getRevisionID(input executionDetails) (*revisionInfo, error) {
 	artifacts := result.PipelineExecution.ArtifactRevisions
 
 	if count := len(artifacts); count > 1 {
-		err = fmt.Errorf("Did not expect multiple CodePipeline artifacts, got: %v", count)
+		err = fmt.Errorf("did not expect multiple CodePipeline artifacts, got: %v", count)
 		return nil, err
 	}
+
 	artifact := artifacts[0]
 
 	info, err := parseRevisionURL(*artifact.RevisionUrl)
 
 	if err != nil || info.commit != *artifact.RevisionId {
-		err = fmt.Errorf("Failed to parse revision URL: %s", err.Error())
+		err = fmt.Errorf("failed to parse revision URL: %s", err.Error())
 		return nil, err
 	}
 
@@ -186,8 +182,7 @@ type statusInfo struct {
 	label       string
 }
 
-func updateGitHubStatus(status statusInfo) error {
-
+func updateGitHubStatus(status *statusInfo) error {
 	// guidance on auth from https://github.com/google/go-github#authentication
 	ctx := context.Background()
 	ts := oauth2.StaticTokenSource(
@@ -202,7 +197,7 @@ func updateGitHubStatus(status statusInfo) error {
 	repoStatus.Description = &status.description
 	repoStatus.TargetURL = &status.url
 
-	repoStatus, _, err := client.Repositories.CreateStatus(
+	_, _, err := client.Repositories.CreateStatus(
 		context.Background(),
 		status.owner,
 		status.repo,
@@ -211,21 +206,23 @@ func updateGitHubStatus(status statusInfo) error {
 	)
 
 	if err != nil {
-		err = fmt.Errorf("Error creating GitHub commit status: %s", err)
+		err = fmt.Errorf("error creating GitHub commit status: %s", err)
 	}
+
 	return err
 }
 
 // HandleRequest is the main entry point for the lambda processing.
 func HandleRequest(ctx context.Context, request events.CloudWatchEvent) error {
-
 	// unmarshal detail
 	// https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/EventTypes.html#codepipeline_event_type
 	var holder interface{}
 	err := json.Unmarshal(request.Detail, &holder)
+
 	if err != nil {
 		return fmt.Errorf("unable to unmarshal CodePipelineEvent detail: %s", err)
 	}
+
 	detail := holder.(map[string]interface{})
 
 	// we process Action execution state changes so that we can get granular
@@ -234,9 +231,9 @@ func HandleRequest(ctx context.Context, request events.CloudWatchEvent) error {
 	if request.DetailType != actionExecutionDetail {
 		log.Printf("Ignoring %s", request.DetailType)
 		return nil
-	} else {
-		log.Printf("Processing %s", request.DetailType)
 	}
+
+	log.Printf("Processing %s", request.DetailType)
 
 	details := executionDetails{
 		pipelineName: detail["pipeline"].(string),
@@ -253,9 +250,9 @@ func HandleRequest(ctx context.Context, request events.CloudWatchEvent) error {
 	if detail["stage"] == "Source" {
 		log.Printf("Ignoring the Source stage for %s", pipelineStatusPage)
 		return nil
-	} else {
-		log.Printf("Processing the %s stage for %s", detail["stage"], pipelineStatusPage)
 	}
+
+	log.Printf("Processing the %s stage for %s", detail["stage"], pipelineStatusPage)
 
 	revisionInfo, err := getRevisionID(details)
 
@@ -286,7 +283,7 @@ func HandleRequest(ctx context.Context, request events.CloudWatchEvent) error {
 		description: statusDescription,
 	}
 
-	err = updateGitHubStatus(commitStatus)
+	err = updateGitHubStatus(&commitStatus)
 
 	if err != nil {
 		log.Printf("Error updating GitHub commit status: %s", err.Error())
