@@ -20,7 +20,7 @@ jobs:
         uses: ngalaiko/bazel-action@0.29.0
         with:
           args: run //scripts:syncdeps
-        if: GITHUB_ACTOR == dependabot-preview
+        if: $GITHUB_ACTOR == dependabot-preview
       - name: Test
         uses: ngalaiko/bazel-action@0.29.0
         with:
@@ -32,4 +32,4 @@ jobs:
           branch: ${{ github.head_ref }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        if: GITHUB_ACTOR == dependabot-preview
+        if: $GITHUB_ACTOR == dependabot-preview
