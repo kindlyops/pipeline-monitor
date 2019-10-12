@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    name: Build
+    name: CI
     runs-on: ubuntu-latest
     steps:
       - name: Check out code into the Go module directory
@@ -20,6 +20,7 @@ jobs:
         uses: ngalaiko/bazel-action@0.29.0
         with:
           args: run //scripts:syncdeps
+        if: GITHUB_ACTOR == dependabot-preview
       - name: Test
         uses: ngalaiko/bazel-action@0.29.0
         with:
@@ -31,3 +32,4 @@ jobs:
           branch: ${{ github.head_ref }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        if: GITHUB_ACTOR == dependabot-preview
