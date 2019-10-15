@@ -34,12 +34,6 @@ go_binary(
     visibility = ["//visibility:private"],
 )
 
-go_test(
-    name = "pipelinemonitor_test",
-    srcs = ["main_test.go"],
-    embed = [":go_default_library"],
-)
-
 pkg_zip(
     name = "lambda_deploy",
     srcs = [
