@@ -10,6 +10,9 @@ jobs:
     name: CI
     runs-on: ubuntu-latest
     steps:
+      - name: Environment debug
+        run: |
+          env
       - name: Check out code into the Go module directory
         uses: actions/checkout@v1
       - name: Build
