@@ -1,0 +1,26 @@
+name: Publish release binaries
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@master
+      - name: Build
+        uses: ngalaiko/bazel-action@0.29.0
+        with:
+          args: build //...
+      - name: Environment debug
+        run: |
+          env
+      - name: Upload release binaries
+        uses: skx/github-action-publish-binaries@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          version: latest
+          args: bazel-bin/lambda_deploy.zip

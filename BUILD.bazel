@@ -16,15 +16,15 @@ go_library(
     importpath = "github.com/kindlyops/pipeline-monitor",
     visibility = ["//visibility:public"],
     deps = [
-        "@com_github_aws_aws_lambda_go//events:go_default_library",
-        "@com_github_aws_aws_lambda_go//lambda:go_default_library",
-        "@com_github_aws_aws_sdk_go//aws:go_default_library",
-        "@com_github_aws_aws_sdk_go//aws/endpoints:go_default_library",
-        "@com_github_aws_aws_sdk_go//aws/session:go_default_library",
-        "@com_github_aws_aws_sdk_go//service/codepipeline:go_default_library",
-        "@com_github_aws_aws_sdk_go//service/secretsmanager:go_default_library",
-        "@com_github_google_go_github//github:go_default_library",
-        "@org_golang_x_oauth2//:go_default_library",
+        "//vendor/github.com/aws/aws-lambda-go/events:go_default_library",
+        "//vendor/github.com/aws/aws-lambda-go/lambda:go_default_library",
+        "//vendor/github.com/aws/aws-sdk-go/aws:go_default_library",
+        "//vendor/github.com/aws/aws-sdk-go/aws/endpoints:go_default_library",
+        "//vendor/github.com/aws/aws-sdk-go/aws/session:go_default_library",
+        "//vendor/github.com/aws/aws-sdk-go/service/codepipeline:go_default_library",
+        "//vendor/github.com/aws/aws-sdk-go/service/secretsmanager:go_default_library",
+        "//vendor/github.com/google/go-github/github:go_default_library",
+        "//vendor/golang.org/x/oauth2:go_default_library",
     ],
 )
 
@@ -37,15 +37,6 @@ go_binary(
     goos = "linux",
     tags = ["manual"],
     visibility = ["//visibility:private"],
-)
-
-go_test(
-    name = "pipelinemonitor_test",
-    srcs = ["main_test.go"],
-    embed = [":go_default_library"],
-    deps = [
-        "@com_github_stretchr_testify//assert:go_default_library",
-    ],
 )
 
 pkg_zip(
@@ -62,5 +53,4 @@ go_test(
     name = "go_default_test",
     srcs = ["main_test.go"],
     embed = [":go_default_library"],
-    deps = ["@com_github_stretchr_testify//assert:go_default_library"],
 )

@@ -2,8 +2,6 @@ package main
 
 import (
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestParseRevisionURL(t *testing.T) {
@@ -12,8 +10,19 @@ func TestParseRevisionURL(t *testing.T) {
 	testURL := "https://github.com/owner_name/repo-name/commit/8873423234re34ea1daewerwe93f92d1557a7b9b"
 
 	result, err := parseRevisionURL(testURL)
-	assert.NoError(t, err)
-	assert.EqualValues(t, result.owner, "owner_name")
-	assert.EqualValues(t, result.repo, "repo-name")
-	assert.EqualValues(t, result.commit, "8873423234re34ea1daewerwe93f92d1557a7b9b")
+	if err != nil {
+		t.Error("error in parseRevisionURL", err)
+	}
+
+	if result.owner != "owner_name" {
+		t.Error("got wrong owner", result.owner)
+	}
+
+	if result.repo != "repo-name" {
+		t.Error("got wrong repo", result, result.repo)
+	}
+
+	if result.commit != "8873423234re34ea1daewerwe93f92d1557a7b9b" {
+		t.Error("got wrong commit", result.commit)
+	}
 }

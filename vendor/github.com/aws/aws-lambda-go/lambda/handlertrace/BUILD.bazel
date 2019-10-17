@@ -1,0 +1,9 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["trace.go"],
+    importmap = "github.com/kindlyops/pipeline-monitor/vendor/github.com/aws/aws-lambda-go/lambda/handlertrace",
+    importpath = "github.com/aws/aws-lambda-go/lambda/handlertrace",
+    visibility = ["//visibility:public"],
+)
