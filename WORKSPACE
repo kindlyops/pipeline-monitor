@@ -59,8 +59,8 @@ http_archive(
 go_repository(
     name = "com_github_aws_aws_sdk_go",
     importpath = "github.com/aws/aws-sdk-go",
-    sum = "h1:wUivbsVOH3LpHdC3Rl5i+FLHfg4sOmYgv4bvHe7+/Pg=",
-    version = "v1.25.11",
+    sum = "h1:hEsU+cukBOQe1wRRuvEgG+y6AVCyS2eyHWuTefhGxTY=",
+    version = "v1.25.14",
 )
 
 go_repository(
