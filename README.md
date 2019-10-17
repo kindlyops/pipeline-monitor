@@ -7,5 +7,4 @@ lambda function to monitor AWS CodePipeline and annotate GitHub commits with sta
 
 ## updating dependencies
 
-    bazel run //scripts:syncdeps
-
+    bazel run syncdeps

@@ -5,6 +5,11 @@ load("@bazel_gazelle//:def.bzl", "gazelle")
 # gazelle:prefix github.com/kindlyops/pipeline-monitor
 gazelle(name = "gazelle")
 
+alias(
+    name = "syncdeps",
+    actual = "//scripts:syncdeps",
+)
+
 go_library(
     name = "go_default_library",
     srcs = ["main.go"],
