@@ -80,8 +80,8 @@ go_repository(
 go_repository(
     name = "com_github_aws_aws_lambda_go",
     importpath = "github.com/aws/aws-lambda-go",
-    sum = "h1:8lYuRVn6rESoUNZXdbCmtGB4bBk4vcVYojiHjE4mMrM=",
-    version = "v1.13.2",
+    sum = "h1:SuCy7H3NLyp+1Mrfp+m80jcbi9KYWAs9/BXwppwRDzY=",
+    version = "v1.13.3",
 )
 
 go_repository(
