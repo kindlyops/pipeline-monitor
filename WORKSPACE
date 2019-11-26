@@ -48,14 +48,6 @@ http_archive(
     urls = ["https://github.com/bazelbuild/buildtools/archive/{0}.tar.gz".format(buildtools_version)],
 )
 
-# https://github.com/bazelbuild/rules_pkg/pull/97
-http_archive(
-    name = "rules_pkg",
-    sha256 = "135a94754b05e06d1e6601fb4872ff0df9efa09813fb1bb67e0a40465784ad39",
-    strip_prefix = "rules_pkg-c87df3e066ef3391be21e09534bea153856f707d",
-    urls = ["https://github.com/kindlyops/rules_pkg/archive/c87df3e066ef3391be21e09534bea153856f707d.tar.gz"],
-)
-
 go_repository(
     name = "com_github_aws_aws_sdk_go",
     importpath = "github.com/aws/aws-sdk-go",

@@ -1,5 +1,4 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library", "go_test")
-load("@rules_pkg//pkg:pkg.bzl", "pkg_zip")
 load("@bazel_gazelle//:def.bzl", "gazelle")
 
 # gazelle:prefix github.com/kindlyops/pipeline-monitor
@@ -39,15 +38,15 @@ go_binary(
     visibility = ["//visibility:private"],
 )
 
-pkg_zip(
-    name = "lambda_deploy",
-    srcs = [
-        ":pipelinemonitor",
-    ],
-    build_zip = "@rules_pkg//pkg:build_zip",
-    timestamp = 0,
-    visibility = ["//visibility:public"],
-)
+# TODO: rework this to make a zip with execute bit set on binary
+# pkg_zip(
+#     name = "lambda_deploy",
+#     srcs = [
+#         ":pipelinemonitor",
+#     ],
+#     timestamp = 0,
+#     visibility = ["//visibility:public"],
+# )
 
 go_test(
     name = "go_default_test",
