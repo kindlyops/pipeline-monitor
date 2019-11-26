@@ -33,15 +33,17 @@ go_binary(
     visibility = ["//visibility:private"],
 )
 
-# TODO: rework this to make a zip with execute bit set on binary
-# pkg_zip(
-#     name = "lambda_deploy",
-#     srcs = [
-#         ":pipelinemonitor",
-#     ],
-#     timestamp = 0,
-#     visibility = ["//visibility:public"],
-# )
+# using this instead of pkg_zip from rules_pkg because of
+# https://github.com/bazelbuild/rules_pkg/pull/97 and
+# https://github.com/bazelbuild/rules_pkg/issues/104
+genrule(
+    name = "lambda_deploy",
+    srcs = [":pipelinemonitor"],
+    outs = ["lambda_deploy.zip"],
+    cmd = "$(location @bazel_tools//tools/zip:zipper) c $@ pipelinemonitor=$(SRCS)",
+    tools = ["@bazel_tools//tools/zip:zipper"],
+    visibility = ["//visibility:public"],
+)
 
 go_test(
     name = "go_default_test",
