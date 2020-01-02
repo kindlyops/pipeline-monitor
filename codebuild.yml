@@ -1,0 +1,14 @@
+version: 0.2
+
+env:
+  variables:
+    CI: true
+
+phases:
+  install:
+    commands:
+      - sudo apt install -y shellcheck
+
+  build:
+    commands:
+      - shellcheck scripts/*.sh
