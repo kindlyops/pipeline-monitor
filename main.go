@@ -212,27 +212,10 @@ func updateGitHubStatus(status *statusInfo) error {
 	return err
 }
 
-// HandleRequest is the main entry point for the lambda processing.
-func HandleRequest(ctx context.Context, request events.CloudWatchEvent) error {
-	// unmarshal detail
-	// https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/EventTypes.html#codepipeline_event_type
-	var holder interface{}
-	err := json.Unmarshal(request.Detail, &holder)
-
-	if err != nil {
-		return fmt.Errorf("unable to unmarshal CodePipelineEvent detail: %s", err)
-	}
-
-	detail := holder.(map[string]interface{})
+func processCodePipelineNotification(request events.CloudWatchEvent, detail map[string]interface{}) error {
 
 	// we process Action execution state changes so that we can get granular
 	// status updates on deploys of individual services or stacks
-	var actionExecutionDetail = "CodePipeline Action Execution State Change"
-	if request.DetailType != actionExecutionDetail {
-		log.Printf("Ignoring %s", request.DetailType)
-		return nil
-	}
-
 	log.Printf("Processing %s", request.DetailType)
 
 	details := executionDetails{
@@ -287,6 +270,64 @@ func HandleRequest(ctx context.Context, request events.CloudWatchEvent) error {
 
 	if err != nil {
 		log.Printf("Error updating GitHub commit status: %s", err.Error())
+	}
+
+	return err
+}
+
+type codeBuildLogInfo struct {
+	groupName  string
+	streamName string
+	deepLink   string
+}
+
+// type sourceInfo struct {
+
+// }
+
+func getCodeBuildLogInfo(logs map[string]interface{}) (codeBuildLogInfo, error) {
+	logInfo := codeBuildLogInfo{
+		groupName:  logs["group-name"].(string),
+		streamName: logs["stream-name"].(string),
+		deepLink:   logs["deep-link"].(string),
+	}
+	return logInfo, nil
+}
+
+func processCodeBuildNotification(request events.CloudWatchEvent, detail map[string]interface{}) error {
+	currentPhase := detail["current-phase"].(string)
+	if currentPhase != "COMPLETED" {
+		log.Printf("Ignoring build notification for phase %s\n", currentPhase)
+		return nil
+	}
+	logDetail := detail["additional-information"].(map[string]interface{})["logs"].(map[string]interface{})
+	logs, err := getCodeBuildLogInfo(logDetail)
+	log.Printf("Additional info is %s\n", logs)
+	log.Printf("Full event is %s\n", request.Detail)
+	return err
+}
+
+// HandleRequest is the main entry point for the lambda processing.
+func HandleRequest(ctx context.Context, request events.CloudWatchEvent) error {
+	// unmarshal detail
+	// https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/EventTypes.html#codepipeline_event_type
+	var holder interface{}
+
+	err := json.Unmarshal(request.Detail, &holder)
+
+	if err != nil {
+		return fmt.Errorf("unable to unmarshal CodePipelineEvent detail: %s\n", err)
+	}
+
+	detail := holder.(map[string]interface{})
+
+	switch request.DetailType {
+	case "CodePipeline Action Execution State Change":
+		err = processCodePipelineNotification(request, detail)
+	case "CodeBuild Build State Change":
+		err = processCodeBuildNotification(request, detail)
+	default:
+		log.Printf("Ignoring %s\n", request.DetailType)
 	}
 
 	return err
