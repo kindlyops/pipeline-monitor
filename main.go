@@ -16,6 +16,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/codebuild"
 	"github.com/aws/aws-sdk-go/service/codepipeline"
 	"github.com/aws/aws-sdk-go/service/secretsmanager"
 
@@ -74,6 +75,43 @@ type revisionInfo struct {
 	owner  string
 	repo   string
 	commit string
+}
+
+func parseRepoURL(revisionURL string) (revisionInfo, error) {
+	// grab the github repo and owner from the repo URL, which looks like
+	// "https://github.com/owner/repo.git"
+	u, err := url.Parse(revisionURL)
+	if err != nil {
+		err = fmt.Errorf("failed to parse revision URL: %s", err.Error())
+		return revisionInfo{}, err
+	}
+
+	var commitMatcher = regexp.MustCompile(`/(?P<owner>[\w-]+)/(?P<repo>[\w-]+)\.git$`)
+
+	var expectedMatches = commitMatcher.NumSubexp() + 1
+
+	match := commitMatcher.FindStringSubmatch(u.Path)
+
+	if len(match) != expectedMatches {
+		err = fmt.Errorf("failed to parse revision URL, expected %v matches for %s and got %v",
+			expectedMatches, u.Path, len(match))
+		return revisionInfo{}, err
+	}
+
+	matches := make(map[string]string)
+
+	for i, name := range commitMatcher.SubexpNames() {
+		if i != 0 && name != "" {
+			matches[name] = match[i]
+		}
+	}
+
+	info := revisionInfo{
+		owner: matches["owner"],
+		repo:  matches["repo"],
+	}
+
+	return info, nil
 }
 
 func parseRevisionURL(revisionURL string) (revisionInfo, error) {
@@ -285,25 +323,127 @@ type codeBuildLogInfo struct {
 
 // }
 
-func getCodeBuildLogInfo(logs map[string]interface{}) (codeBuildLogInfo, error) {
-	logInfo := codeBuildLogInfo{
-		groupName:  logs["group-name"].(string),
-		streamName: logs["stream-name"].(string),
-		deepLink:   logs["deep-link"].(string),
+type buildDetails struct {
+	owner    string
+	repo     string
+	prID     string
+	commitID string
+	logInfo  codeBuildLogInfo
+	body     string
+}
+
+func parsePrId(sourceVersion string) (string, error) {
+	// grab the github repo and owner from the CodeBuild SourceVersion,
+	// which looks like "pr/39"
+	var prMatcher = regexp.MustCompile(`pr/(?P<id>[\d]+)$`)
+
+	var expectedMatches = prMatcher.NumSubexp() + 1
+
+	match := prMatcher.FindStringSubmatch(sourceVersion)
+
+	if len(match) != expectedMatches {
+		err := fmt.Errorf("failed to parse SourceVersion, expected %v matches for %s and got %v",
+			expectedMatches, sourceVersion, len(match))
+		return "", err
 	}
-	return logInfo, nil
+
+	return match[1], nil
+}
+
+func getCodeBuildLog(info codeBuildLogInfo) (string, error) {
+	// TODO
+	return "TODO LOG BODY", nil
+}
+
+func getCodeBuildDetails(buildId string) (buildDetails, error) {
+	sess := session.Must(session.NewSessionWithOptions(session.Options{
+		SharedConfigState: session.SharedConfigEnable,
+	}))
+
+	// change this to use an interface so that this can be mocked/tested
+	// https://docs.aws.amazon.com/sdk-for-go/api/service/codepipeline/codepipelineiface/
+	svc := codebuild.New(sess)
+
+	apiInput := &codebuild.BatchGetBuildsInput{
+		Ids: []*string{aws.String(buildId)},
+	}
+
+	var data buildDetails
+
+	result, err := svc.BatchGetBuilds(apiInput)
+	if len(result.Builds) != 1 {
+		return data, fmt.Errorf("unexpected %d results for build-id: %s", len(result.Builds), buildId)
+	}
+	build := result.Builds[0]
+	if *build.Source.Type != "GITHUB" {
+		return data, fmt.Errorf("this only works with Source.Type == GITHUB, found Source.Type == %s", *build.Source.Type)
+	}
+
+	data.commitID = *build.ResolvedSourceVersion
+	data.repo = strings.TrimSuffix(*build.Source.Location, ".git")
+	data.logInfo.groupName = *build.Logs.GroupName
+	data.logInfo.streamName = *build.Logs.StreamName
+	data.logInfo.deepLink = *build.Logs.DeepLink
+	data.prID, err = parsePrId(*build.SourceVersion)
+
+	commentTemplate := `
+<!--
+PIPELINE_MONITOR_GENERATED_LOG_COMMENT
+-->
+<details>
+  <summary>Click to expand the latest build log!</summary>
+
+  ## Link to original cloudwatch log
+  %v
+
+  ## First 64K of build log
+
+  %v
+</details>
+
+`
+	logBody, err := getCodeBuildLog(data.logInfo)
+
+	data.body = fmt.Sprintf(commentTemplate, data.logInfo.deepLink, logBody)
+
+	return data, err
+}
+
+func updateGitHubLogComment(details *buildDetails) error {
+	// guidance on auth from https://github.com/google/go-github#authentication
+	ctx := context.Background()
+	ts := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: gitHubToken},
+	)
+	tc := oauth2.NewClient(ctx, ts)
+	_ = github.NewClient(tc)
+
+	// _, _, err := client.Issues.CreateComment(
+	// 	context.Background(),
+	// )
+
+	// if err != nil {
+	// 	err = fmt.Errorf("error creating GitHub commit status: %s", err)
+	// }
+
+	return nil
 }
 
 func processCodeBuildNotification(request events.CloudWatchEvent, detail map[string]interface{}) error {
 	currentPhase := detail["current-phase"].(string)
 	if currentPhase != "COMPLETED" {
-		log.Printf("Ignoring build notification for phase %s\n", currentPhase)
+		log.Printf("Ignoring build notification for phase %s", currentPhase)
 		return nil
 	}
-	logDetail := detail["additional-information"].(map[string]interface{})["logs"].(map[string]interface{})
-	logs, err := getCodeBuildLogInfo(logDetail)
-	log.Printf("Additional info is %s\n", logs)
-	log.Printf("Full event is %s\n", request.Detail)
+
+	// the CodeBuild event notifications have inconsistent information
+	// (data fields only contain PR ID on retry, not on webhook-triggered build)
+	// call into the CodeBuild API to get sufficient info
+	buildId := detail["build-id"].(string)
+	details, err := getCodeBuildDetails(buildId)
+	log.Printf("codebuildDetails: %v", details)
+	log.Printf("full event is %s\n", request.Detail)
+
 	return err
 }
 
