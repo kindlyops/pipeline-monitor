@@ -1,14 +1,8 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library", "go_test")
-load("@rules_pkg//pkg:pkg.bzl", "pkg_zip")
 load("@bazel_gazelle//:def.bzl", "gazelle")
 
 # gazelle:prefix github.com/kindlyops/pipeline-monitor
 gazelle(name = "gazelle")
-
-alias(
-    name = "syncdeps",
-    actual = "//scripts:syncdeps",
-)
 
 go_library(
     name = "go_default_library",
@@ -39,13 +33,15 @@ go_binary(
     visibility = ["//visibility:private"],
 )
 
-pkg_zip(
+# using this instead of pkg_zip from rules_pkg because of
+# https://github.com/bazelbuild/rules_pkg/pull/97 and
+# https://github.com/bazelbuild/rules_pkg/issues/104
+genrule(
     name = "lambda_deploy",
-    srcs = [
-        ":pipelinemonitor",
-    ],
-    build_zip = "@rules_pkg//pkg:build_zip",
-    timestamp = 0,
+    srcs = [":pipelinemonitor"],
+    outs = ["lambda_deploy.zip"],
+    cmd = "$(location @bazel_tools//tools/zip:zipper) c $@ pipelinemonitor=$(SRCS)",
+    tools = ["@bazel_tools//tools/zip:zipper"],
     visibility = ["//visibility:public"],
 )
 
