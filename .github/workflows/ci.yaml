@@ -33,6 +33,9 @@ jobs:
         with:
           commit_message: Apply syncdeps changes
           branch: ${{ github.head_ref }}
+          commit_user_name: Kindly Ops GitHub Actions Bot
+          commit_user_email: support-kindlyops@noreply.github.com
+          commit_author: Kindly Ops GitHub Actions Bot <support-kindlyops@noreply.gitub.com>
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         if: github.actor == 'dependabot-preview[bot]'
