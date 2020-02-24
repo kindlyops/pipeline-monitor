@@ -15,7 +15,8 @@ jobs:
           env
       - name: Check out code into the Go module directory
         uses: actions/checkout@v2
-        token: ${{ secrets.PAT_TOKEN }}
+        with:
+          token: ${{ secrets.PAT_TOKEN }}
       - name: Build
         uses: ngalaiko/bazel-action@0.29.0
         with:
