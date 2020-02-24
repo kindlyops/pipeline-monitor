@@ -58,8 +58,8 @@ go_repository(
 go_repository(
     name = "com_github_aws_aws_sdk_go",
     importpath = "github.com/aws/aws-sdk-go",
-    sum = "h1:hEsU+cukBOQe1wRRuvEgG+y6AVCyS2eyHWuTefhGxTY=",
-    version = "v1.25.14",
+    sum = "h1:Kma1ikL7MHs/XH5Q4Aqj53AAhgttW6UFykc8Qj16HGo=",
+    version = "v1.29.8",
 )
 
 go_repository(
@@ -184,8 +184,8 @@ go_repository(
 go_repository(
     name = "org_golang_x_net",
     importpath = "golang.org/x/net",
-    sum = "h1:bRhVy7zSSasaqNksaRZiA5EEI+Ei4I1nO5Jh72wfHlg=",
-    version = "v0.0.0-20190108225652-1e06a53dbb7e",
+    sum = "h1:CCH4IOTTfewWjGOlSp+zGcjutRKlBEZQ6wTn8ozI/nI=",
+    version = "v0.0.0-20200202094626-16171245cfb2",
 )
 
 go_repository(
@@ -207,4 +207,32 @@ go_repository(
     importpath = "golang.org/x/text",
     sum = "h1:g61tztE5qeGQ89tm6NTjjM9VPIm088od1l6aSorWRWg=",
     version = "v0.3.0",
+)
+
+go_repository(
+    name = "com_github_go_sql_driver_mysql",
+    importpath = "github.com/go-sql-driver/mysql",
+    sum = "h1:ozyZYNQW3x3HtqT1jira07DN2PArx2v7/mN66gGcHOs=",
+    version = "v1.5.0",
+)
+
+go_repository(
+    name = "com_github_pkg_errors",
+    importpath = "github.com/pkg/errors",
+    sum = "h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=",
+    version = "v0.9.1",
+)
+
+go_repository(
+    name = "org_golang_x_crypto",
+    importpath = "golang.org/x/crypto",
+    sum = "h1:VklqNMn3ovrHsnt90PveolxSbWFaJdECFbxSq0Mqo2M=",
+    version = "v0.0.0-20190308221718-c2843e01d9a2",
+)
+
+go_repository(
+    name = "org_golang_x_sys",
+    importpath = "golang.org/x/sys",
+    sum = "h1:1BGLXjeY4akVXGgbC9HugT3Jv3hCI0z56oJR5vAMgBU=",
+    version = "v0.0.0-20190215142949-d0b11bdaac8a",
 )
