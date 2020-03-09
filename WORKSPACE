@@ -51,8 +51,8 @@ http_archive(
 go_repository(
     name = "com_github_aws_aws_lambda_go",
     importpath = "github.com/aws/aws-lambda-go",
-    sum = "h1:kTr1VPabIgJsMVzHuZpNhs/5RR46LU6wyWUiHxtb3ag=",
-    version = "v1.14.0",
+    sum = "h1:QAhRWvXttl8TtBsODN+NzZETkci2mdN/paJ0+1hX/so=",
+    version = "v1.15.0",
 )
 
 go_repository(
@@ -207,4 +207,11 @@ go_repository(
     importpath = "golang.org/x/text",
     sum = "h1:g61tztE5qeGQ89tm6NTjjM9VPIm088od1l6aSorWRWg=",
     version = "v0.3.0",
+)
+
+go_repository(
+    name = "com_github_urfave_cli_v2",
+    importpath = "github.com/urfave/cli/v2",
+    sum = "h1:Qt8FeAtxE/vfdrLmR3rxR6JRE0RoVmbXu8+6kZtYU4k=",
+    version = "v2.1.1",
 )
