@@ -58,8 +58,8 @@ go_repository(
 go_repository(
     name = "com_github_aws_aws_sdk_go",
     importpath = "github.com/aws/aws-sdk-go",
-    sum = "h1:hEsU+cukBOQe1wRRuvEgG+y6AVCyS2eyHWuTefhGxTY=",
-    version = "v1.25.14",
+    sum = "h1:7NDwnnQrI1Ivk0bXLzMmuX5ozzOwteHOsAs4druW7gI=",
+    version = "v1.30.0",
 )
 
 go_repository(
@@ -107,8 +107,8 @@ go_repository(
 go_repository(
     name = "com_github_jmespath_go_jmespath",
     importpath = "github.com/jmespath/go-jmespath",
-    sum = "h1:pmfjZENx5imkbgOkpRUYLnmbU7UEFbjtDA2hxJ1ichM=",
-    version = "v0.0.0-20180206201540-c2b33e8439af",
+    sum = "h1:OS12ieG61fsCg5+qLJ+SsW9NicxNkg3b25OyT2yCeUc=",
+    version = "v0.3.0",
 )
 
 go_repository(
@@ -142,8 +142,8 @@ go_repository(
 go_repository(
     name = "com_github_stretchr_testify",
     importpath = "github.com/stretchr/testify",
-    sum = "h1:2E4SXV/wtOkTonXsotYi4li6zVWxYlZuYNCXe9XRJyk=",
-    version = "v1.4.0",
+    sum = "h1:nOGnQDM7FYENwehXlg/kFVnos3rEvtKTjRvOWSzb6H4=",
+    version = "v1.5.1",
 )
 
 go_repository(
@@ -184,8 +184,8 @@ go_repository(
 go_repository(
     name = "org_golang_x_net",
     importpath = "golang.org/x/net",
-    sum = "h1:bRhVy7zSSasaqNksaRZiA5EEI+Ei4I1nO5Jh72wfHlg=",
-    version = "v0.0.0-20190108225652-1e06a53dbb7e",
+    sum = "h1:CCH4IOTTfewWjGOlSp+zGcjutRKlBEZQ6wTn8ozI/nI=",
+    version = "v0.0.0-20200202094626-16171245cfb2",
 )
 
 go_repository(
@@ -214,4 +214,32 @@ go_repository(
     importpath = "github.com/urfave/cli/v2",
     sum = "h1:Qt8FeAtxE/vfdrLmR3rxR6JRE0RoVmbXu8+6kZtYU4k=",
     version = "v2.1.1",
+)
+
+go_repository(
+    name = "com_github_go_sql_driver_mysql",
+    importpath = "github.com/go-sql-driver/mysql",
+    sum = "h1:ozyZYNQW3x3HtqT1jira07DN2PArx2v7/mN66gGcHOs=",
+    version = "v1.5.0",
+)
+
+go_repository(
+    name = "com_github_pkg_errors",
+    importpath = "github.com/pkg/errors",
+    sum = "h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=",
+    version = "v0.9.1",
+)
+
+go_repository(
+    name = "org_golang_x_crypto",
+    importpath = "golang.org/x/crypto",
+    sum = "h1:VklqNMn3ovrHsnt90PveolxSbWFaJdECFbxSq0Mqo2M=",
+    version = "v0.0.0-20190308221718-c2843e01d9a2",
+)
+
+go_repository(
+    name = "org_golang_x_sys",
+    importpath = "golang.org/x/sys",
+    sum = "h1:1BGLXjeY4akVXGgbC9HugT3Jv3hCI0z56oJR5vAMgBU=",
+    version = "v0.0.0-20190215142949-d0b11bdaac8a",
 )
