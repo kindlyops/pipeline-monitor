@@ -51,8 +51,8 @@ http_archive(
 go_repository(
     name = "com_github_aws_aws_lambda_go",
     importpath = "github.com/aws/aws-lambda-go",
-    sum = "h1:QAhRWvXttl8TtBsODN+NzZETkci2mdN/paJ0+1hX/so=",
-    version = "v1.15.0",
+    sum = "h1:9+Pp1/6cjEXYhwadp8faFXKSOWt7/tHRCnQxQmKvVwM=",
+    version = "v1.16.0",
 )
 
 go_repository(
