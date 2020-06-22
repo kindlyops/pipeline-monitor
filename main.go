@@ -335,6 +335,11 @@ type buildDetails struct {
 func parsePrId(sourceVersion string) (string, error) {
 	// grab the github repo and owner from the CodeBuild SourceVersion,
 	// which looks like "pr/39"
+	// this only works if CodeBuild is configured to build on event types
+	// PULL_REQUEST_UPDATED
+	// PULL_REQUEST_CREATED
+	// PULL_REQUEST_REOPENED
+	// the event notifications from event PUSH only contain a git revision hash
 	var prMatcher = regexp.MustCompile(`pr/(?P<id>[\d]+)$`)
 
 	var expectedMatches = prMatcher.NumSubexp() + 1
