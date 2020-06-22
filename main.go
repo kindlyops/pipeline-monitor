@@ -456,7 +456,7 @@ func HandleRequest(ctx context.Context, request events.CloudWatchEvent) error {
 	err := json.Unmarshal(request.Detail, &holder)
 
 	if err != nil {
-		return fmt.Errorf("unable to unmarshal CodePipelineEvent detail: %s\n", err)
+		return fmt.Errorf("unable to unmarshal Lambda Event detail: %s\n", err)
 	}
 
 	detail := holder.(map[string]interface{})
