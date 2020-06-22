@@ -464,7 +464,7 @@ func HandleRequest(ctx context.Context, request events.CloudWatchEvent) error {
 	switch request.DetailType {
 	case "CodePipeline Action Execution State Change":
 		err = processCodePipelineNotification(request, detail)
-	case "CodeBuild Build State Change":
+	case "CodeBuild Build State Change": // these come from PR builds
 		err = processCodeBuildNotification(request, detail)
 	default:
 		log.Printf("Ignoring %s\n", request.DetailType)
