@@ -36,12 +36,3 @@ http_archive(
 load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
 
 gazelle_dependencies()
-
-buildtools_version = "3.3.0"
-
-http_archive(
-    name = "io_bazel_buildtools",
-    sha256 = "5ec71602e9b458b01717fab1d37492154c1c12ea83f881c745dbd88e9b2098d8",
-    strip_prefix = "buildtools-{0}".format(buildtools_version),
-    urls = ["https://github.com/bazelbuild/buildtools/archive/{0}.tar.gz".format(buildtools_version)],
-)
