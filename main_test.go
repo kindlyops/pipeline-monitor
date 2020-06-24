@@ -27,6 +27,30 @@ func TestParseRevisionURL(t *testing.T) {
 	}
 }
 
+// Sample event for CodeBuild status change
+// {
+//   "version": "0",
+//   "id": "bfdc1220-60ff-44ad-bfa7-3b6e6ba3b2d0",
+//   "detail-type": "CodeBuild Build State Change",
+//   "source": "aws.codebuild",
+//   "account": "123456789012",
+//   "time": "2017-07-12T00:42:28Z",
+//   "region": "us-east-1",
+//   "resources": [
+//     "arn:aws:codebuild:us-east-1:123456789012:build/SampleProjectName:ed6aa685-0d76-41da-a7f5-6d8760f41f55"
+//   ],
+//   "detail": {
+//     "build-status": "SUCCEEDED",
+//     "project-name": "SampleProjectName",
+//     "build-id": "arn:aws:codebuild:us-east-1:123456789012:build/SampleProjectName:ed6aa685-0d76-41da-a7f5-6d8760f41f55",
+//     "current-phase": "COMPLETED",
+//     "current-phase-context": "[]",
+//     "version": "1"
+//   }
+// }
+
+//
+
 func TestParseRepoURL(t *testing.T) {
 	t.Parallel()
 
