@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -16,7 +17,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/codebuild"
 	"github.com/aws/aws-sdk-go/service/codepipeline"
 	"github.com/aws/aws-sdk-go/service/secretsmanager"
 
@@ -27,9 +27,20 @@ import (
 // load the GitHub Oauth token when the lambda is loaded, not on every execution
 // this reduces the call volume into SecretsManager
 var gitHubToken string
+var maxLogLines int
 
 type secretToken struct {
 	Token string `json:"token"`
+}
+
+func getMaxLogLines() int {
+	i, err := strconv.Atoi(os.Getenv("MAX_LOG_LINES"))
+	if err != nil {
+		i = 10000
+	} else if i > 10000 {
+		i = 10000
+	}
+	return i
 }
 
 func getGitHubToken() (string, error) {
@@ -307,111 +318,10 @@ func processCodePipelineNotification(request events.CloudWatchEvent, detail map[
 	err = updateGitHubStatus(&commitStatus)
 
 	if err != nil {
-		log.Printf("Error updating GitHub commit status: %s", err.Error())
+		log.Printf("error updating GitHub commit status: %s", err.Error())
 	}
 
 	return err
-}
-
-type codeBuildLogInfo struct {
-	groupName  string
-	streamName string
-	deepLink   string
-}
-
-// type sourceInfo struct {
-
-// }
-
-type buildDetails struct {
-	owner    string
-	repo     string
-	prID     string
-	commitID string
-	logInfo  codeBuildLogInfo
-	body     string
-}
-
-func parsePrId(sourceVersion string) (string, error) {
-	// grab the github repo and owner from the CodeBuild SourceVersion,
-	// which looks like "pr/39"
-	// this only works if CodeBuild is configured to build on event types
-	// PULL_REQUEST_UPDATED
-	// PULL_REQUEST_CREATED
-	// PULL_REQUEST_REOPENED
-	// the event notifications from event PUSH only contain a git revision hash
-	var prMatcher = regexp.MustCompile(`pr/(?P<id>[\d]+)$`)
-
-	var expectedMatches = prMatcher.NumSubexp() + 1
-
-	match := prMatcher.FindStringSubmatch(sourceVersion)
-
-	if len(match) != expectedMatches {
-		err := fmt.Errorf("failed to parse SourceVersion, expected %v matches for %s and got %v",
-			expectedMatches, sourceVersion, len(match))
-		return "", err
-	}
-
-	return match[1], nil
-}
-
-func getCodeBuildLog(info codeBuildLogInfo) (string, error) {
-	// TODO
-	return "TODO LOG BODY", nil
-}
-
-func getCodeBuildDetails(buildId string) (buildDetails, error) {
-	sess := session.Must(session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
-	}))
-
-	// change this to use an interface so that this can be mocked/tested
-	// https://docs.aws.amazon.com/sdk-for-go/api/service/codepipeline/codepipelineiface/
-	svc := codebuild.New(sess)
-
-	apiInput := &codebuild.BatchGetBuildsInput{
-		Ids: []*string{aws.String(buildId)},
-	}
-
-	var data buildDetails
-
-	result, err := svc.BatchGetBuilds(apiInput)
-	if len(result.Builds) != 1 {
-		return data, fmt.Errorf("unexpected %d results for build-id: %s", len(result.Builds), buildId)
-	}
-	build := result.Builds[0]
-	if *build.Source.Type != "GITHUB" {
-		return data, fmt.Errorf("this only works with Source.Type == GITHUB, found Source.Type == %s", *build.Source.Type)
-	}
-
-	data.commitID = *build.ResolvedSourceVersion
-	data.repo = strings.TrimSuffix(*build.Source.Location, ".git")
-	data.logInfo.groupName = *build.Logs.GroupName
-	data.logInfo.streamName = *build.Logs.StreamName
-	data.logInfo.deepLink = *build.Logs.DeepLink
-	data.prID, err = parsePrId(*build.SourceVersion)
-
-	commentTemplate := `
-<!--
-PIPELINE_MONITOR_GENERATED_LOG_COMMENT
--->
-<details>
-  <summary>Click to expand the latest build log!</summary>
-
-  ## Link to original cloudwatch log
-  %v
-
-  ## First 64K of build log
-
-  %v
-</details>
-
-`
-	logBody, err := getCodeBuildLog(data.logInfo)
-
-	data.body = fmt.Sprintf(commentTemplate, data.logInfo.deepLink, logBody)
-
-	return data, err
 }
 
 func updateGitHubLogComment(details *buildDetails) error {
@@ -437,7 +347,7 @@ func updateGitHubLogComment(details *buildDetails) error {
 func processCodeBuildNotification(request events.CloudWatchEvent, detail map[string]interface{}) error {
 	currentPhase := detail["current-phase"].(string)
 	if currentPhase != "COMPLETED" {
-		log.Printf("Ignoring build notification for phase %s", currentPhase)
+		log.Printf("ignoring build notification for phase %s", currentPhase)
 		return nil
 	}
 
@@ -445,7 +355,8 @@ func processCodeBuildNotification(request events.CloudWatchEvent, detail map[str
 	// (data fields only contain PR ID on retry, not on webhook-triggered build)
 	// call into the CodeBuild API to get sufficient info
 	buildId := detail["build-id"].(string)
-	details, err := getCodeBuildDetails(buildId)
+	projectName := detail["project-name"].(string)
+	details, err := getCodeBuildDetails(buildId, maxLogLines, projectName)
 	log.Printf("codebuildDetails: %v", details)
 	log.Printf("full event is %s\n", request.Detail)
 
@@ -482,6 +393,7 @@ func main() {
 	// initialize secrets on lambda boot, not on every invocation
 	var err error
 	gitHubToken, err = getGitHubToken()
+	maxLogLines = getMaxLogLines()
 
 	if err != nil {
 		log.Printf("Error loading github access token: %s", err.Error())
