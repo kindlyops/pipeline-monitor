@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
+	"html/template"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go/service/codebuild"
@@ -61,21 +62,7 @@ func getCodeBuildDetails(buildId string, limit int, projectName string) (buildDe
 	var data buildDetails
 
 	result, err := svc.BatchGetBuilds(apiInput)
-	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
-			switch aerr.Code() {
-			case codebuild.ErrCodeInvalidInputException:
-				fmt.Println(codebuild.ErrCodeInvalidInputException, aerr.Error())
-			default:
-				fmt.Println(aerr.Error())
-			}
-		} else {
-			// Print the error, cast err to awserr.Error to get the Code and
-			// Message from an error.
-			fmt.Println(err.Error())
-		}
-	}
-	if len(result.Builds) != 1 {
+	if err != nil || len(result.Builds) != 1 {
 		return data, fmt.Errorf("unexpected %d results for build-id: %s", len(result.Builds), buildId)
 	}
 	build := result.Builds[0]
@@ -89,24 +76,38 @@ func getCodeBuildDetails(buildId string, limit int, projectName string) (buildDe
 	data.logInfo.streamName = *build.Logs.StreamName
 	data.logInfo.deepLink = *build.Logs.DeepLink
 	data.prID, err = parsePrId(*build.SourceVersion)
-
+	logBody, err := getCodeBuildLog(sess, data.logInfo, limit)
+	if err != nil {
+		return data, fmt.Errorf("error retrieving codebuild logs for %s: %s", *build.Logs.DeepLink, err)
+	}
+	var commentData = map[string]string{
+		"body":           logBody,
+		"limit":          strconv.Itoa(limit),
+		"tripleBacktick": "```",
+		"deepLink":       data.logInfo.deepLink,
+		"projectName":    projectName,
+	}
 	commentTemplate := `
 <!--
 PIPELINE_MONITOR_GENERATED_LOG_COMMENT
 -->
-## First %v lines of %v latest build log
+## First {{.limit}} lines of {{.projectName}} latest build log
 <details>
   <summary>Click to expand the latest build log!</summary>
 
-  ## Link to [original cloudwatch log](%v)
-
-  %v
+  ## Link to [original cloudwatch log]({{.deepLink}})
+{{.tripleBacktick}}
+{{.body}}
+{{.tripleBacktick}}
 </details>
-
 `
-	logBody, err := getCodeBuildLog(sess, data.logInfo, limit)
-
-	data.body = fmt.Sprintf(commentTemplate, limit, projectName, data.logInfo.deepLink, logBody)
+	t := template.Must(template.New("t1").Parse(commentTemplate))
+	var body strings.Builder
+	err = t.Execute(&body, commentData)
+	if err != nil {
+		return data, fmt.Errorf("error formatting comment template: %s", err)
+	}
+	data.body = body.String()
 
 	return data, err
 }
