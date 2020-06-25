@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"html/template"
 	"regexp"
@@ -11,6 +12,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go/service/codebuild"
+	"github.com/google/go-github/github"
+	"golang.org/x/oauth2"
 )
 
 type codeBuildLogInfo struct {
@@ -20,12 +23,13 @@ type codeBuildLogInfo struct {
 }
 
 type buildDetails struct {
-	owner    string
-	repo     string
-	prID     string
-	commitID string
-	logInfo  codeBuildLogInfo
-	body     string
+	owner      string
+	repo       string
+	prID       string
+	commitID   string
+	logInfo    codeBuildLogInfo
+	body       string
+	commentTag string
 }
 
 func getCodeBuildLog(sess *session.Session, info codeBuildLogInfo, limit int) (string, error) {
@@ -76,20 +80,22 @@ func getCodeBuildDetails(buildId string, limit int, projectName string) (buildDe
 	data.logInfo.streamName = *build.Logs.StreamName
 	data.logInfo.deepLink = *build.Logs.DeepLink
 	data.prID, err = parsePrId(*build.SourceVersion)
+	data.commentTag = "PIPELINE_MONITOR_GENERATED_LOG_COMMENT_" + strings.ToUpper(projectName)
 	logBody, err := getCodeBuildLog(sess, data.logInfo, limit)
 	if err != nil {
 		return data, fmt.Errorf("error retrieving codebuild logs for %s: %s", *build.Logs.DeepLink, err)
 	}
 	var commentData = map[string]string{
 		"body":           logBody,
-		"limit":          strconv.Itoa(limit),
-		"tripleBacktick": "```",
+		"commentTag":     data.commentTag,
 		"deepLink":       data.logInfo.deepLink,
+		"limit":          strconv.Itoa(limit),
 		"projectName":    projectName,
+		"tripleBacktick": "```",
 	}
 	commentTemplate := `
 <!--
-PIPELINE_MONITOR_GENERATED_LOG_COMMENT
+{{.commentTag}}
 -->
 ## First {{.limit}} lines of {{.projectName}} latest build log
 <details>
@@ -133,4 +139,29 @@ func parsePrId(sourceVersion string) (string, error) {
 	}
 
 	return match[1], nil
+}
+
+func upsertGitHubLogComment(details *buildDetails, token string) error {
+	// guidance on auth from https://github.com/google/go-github#authentication
+	ctx := context.Background()
+	ts := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: token},
+	)
+	tc := oauth2.NewClient(ctx, ts)
+	_ = github.NewClient(tc)
+
+	// iterate PR comments
+
+	// Found comment with tag?
+	// update comment
+	// else insert new comment
+	// _, _, err := client.Issues.CreateComment(
+	// 	context.Background(),
+	// )
+
+	// if err != nil {
+	// 	err = fmt.Errorf("error creating GitHub commit status: %s", err)
+	// }
+
+	return nil
 }

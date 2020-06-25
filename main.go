@@ -324,26 +324,6 @@ func processCodePipelineNotification(request events.CloudWatchEvent, detail map[
 	return err
 }
 
-func updateGitHubLogComment(details *buildDetails) error {
-	// guidance on auth from https://github.com/google/go-github#authentication
-	ctx := context.Background()
-	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: gitHubToken},
-	)
-	tc := oauth2.NewClient(ctx, ts)
-	_ = github.NewClient(tc)
-
-	// _, _, err := client.Issues.CreateComment(
-	// 	context.Background(),
-	// )
-
-	// if err != nil {
-	// 	err = fmt.Errorf("error creating GitHub commit status: %s", err)
-	// }
-
-	return nil
-}
-
 func processCodeBuildNotification(request events.CloudWatchEvent, detail map[string]interface{}) error {
 	currentPhase := detail["current-phase"].(string)
 	if currentPhase != "COMPLETED" {

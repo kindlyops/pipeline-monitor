@@ -10,7 +10,7 @@ phases:
       docker: 18
       nodejs: 10
     commands:
-      - apt install -y shellcheck
+      - apt update && apt install -y shellcheck
 
   build:
     commands:

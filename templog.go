@@ -19,4 +19,8 @@ func main() {
 	}
 
 	fmt.Printf(details.body)
+
+	token := os.Getenv("GITHUB_TOKEN")
+
+	err = upsertGitHubLogComment(&details, token)
 }
