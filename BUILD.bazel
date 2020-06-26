@@ -4,8 +4,6 @@ load("@bazel_gazelle//:def.bzl", "gazelle")
 # gazelle:prefix github.com/kindlyops/pipeline-monitor
 gazelle(name = "gazelle")
 
-# gazelle:exclude templog.go
-
 go_library(
     name = "go_default_library",
     srcs = [
@@ -39,38 +37,6 @@ go_binary(
     goos = "linux",
     tags = ["manual"],
     visibility = ["//visibility:private"],
-)
-
-go_library(
-    name = "temp_library",
-    srcs = [
-        "cloudwatchlogs.go",
-        "templog.go",
-    ],
-    importpath = "github.com/kindlyops/pipeline-monitor",
-    visibility = ["//visibility:public"],
-    deps = [
-        "//vendor/github.com/aws/aws-lambda-go/events:go_default_library",
-        "//vendor/github.com/aws/aws-lambda-go/lambda:go_default_library",
-        "//vendor/github.com/aws/aws-sdk-go/aws:go_default_library",
-        "//vendor/github.com/aws/aws-sdk-go/aws/awserr:go_default_library",
-        "//vendor/github.com/aws/aws-sdk-go/aws/endpoints:go_default_library",
-        "//vendor/github.com/aws/aws-sdk-go/aws/session:go_default_library",
-        "//vendor/github.com/aws/aws-sdk-go/service/cloudwatchlogs:go_default_library",
-        "//vendor/github.com/aws/aws-sdk-go/service/codebuild:go_default_library",
-        "//vendor/github.com/aws/aws-sdk-go/service/codepipeline:go_default_library",
-        "//vendor/github.com/aws/aws-sdk-go/service/secretsmanager:go_default_library",
-        "//vendor/github.com/google/go-github/github:go_default_library",
-        "//vendor/golang.org/x/oauth2:go_default_library",
-    ],
-)
-
-# override goos and goarch because this artifact is intended for AWS Lambda
-# and must always be compiled for linux_amd64
-go_binary(
-    name = "templog",
-    embed = [":temp_library"],
-    visibility = ["//visibility:public"],
 )
 
 # using this instead of pkg_zip from rules_pkg because of

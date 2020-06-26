@@ -35,9 +35,7 @@ type secretToken struct {
 
 func getMaxLogLines() int {
 	i, err := strconv.Atoi(os.Getenv("MAX_LOG_LINES"))
-	if err != nil {
-		i = 10000
-	} else if i > 10000 {
+	if err != nil || i > 10000 {
 		i = 10000
 	}
 	return i
