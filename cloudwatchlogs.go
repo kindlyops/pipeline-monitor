@@ -226,22 +226,15 @@ func upsertGitHubLogComment(details *buildDetails, token string) error {
 		return err
 	}
 
-	var existingCommentID int64
-
+	// delete old comment, we will post a new one
 	for _, comment := range comments {
 		if strings.Contains(*comment.Body, details.commentTag) {
-			existingCommentID = *comment.ID
-			break
+			_, _ = gh.Issues.DeleteComment(ctx, details.owner, details.repo, *comment.ID)
 		}
 	}
 
 	comment := &github.IssueComment{Body: &details.body}
-
-	if existingCommentID != 0 {
-		_, _, err = gh.Issues.EditComment(ctx, details.owner, details.repo, existingCommentID, comment)
-	} else {
-		_, _, err = gh.Issues.CreateComment(ctx, details.owner, details.repo, details.prID, comment)
-	}
+	_, _, err = gh.Issues.CreateComment(ctx, details.owner, details.repo, details.prID, comment)
 
 	return err
 }
