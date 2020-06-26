@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go/service/codebuild"
@@ -76,7 +77,7 @@ func parseRepoURL(revisionURL string) (revisionInfo, error) {
 	return info, nil
 }
 
-func getCodeBuildLog(sess *session.Session, info codeBuildLogInfo, limit int) (string, error) {
+func getCodeBuildLog(sess client.ConfigProvider, info codeBuildLogInfo, limit int) (string, error) {
 	svc := cloudwatchlogs.New(sess)
 	resp, err := svc.GetLogEvents(&cloudwatchlogs.GetLogEventsInput{
 		Limit:         aws.Int64(int64(limit)),
