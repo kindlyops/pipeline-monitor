@@ -217,11 +217,11 @@ func upsertGitHubLogComment(details *buildDetails, token string) error {
 		&oauth2.Token{AccessToken: token},
 	)
 	tc := oauth2.NewClient(ctx, ts)
-	client := github.NewClient(tc)
+	gh := github.NewClient(tc)
 
 	// iterate PR comments
 	opt := &github.IssueListCommentsOptions{Sort: "updated", Direction: "desc"}
-	comments, _, err := client.Issues.ListComments(ctx, details.owner, details.repo, details.prID, opt)
+	comments, _, err := gh.Issues.ListComments(ctx, details.owner, details.repo, details.prID, opt)
 	if err != nil {
 		return err
 	}
@@ -238,9 +238,9 @@ func upsertGitHubLogComment(details *buildDetails, token string) error {
 	comment := &github.IssueComment{Body: &details.body}
 
 	if existingCommentID != 0 {
-		_, _, err = client.Issues.EditComment(ctx, details.owner, details.repo, existingCommentID, comment)
+		_, _, err = gh.Issues.EditComment(ctx, details.owner, details.repo, existingCommentID, comment)
 	} else {
-		_, _, err = client.Issues.CreateComment(ctx, details.owner, details.repo, details.prID, comment)
+		_, _, err = gh.Issues.CreateComment(ctx, details.owner, details.repo, details.prID, comment)
 	}
 
 	return err

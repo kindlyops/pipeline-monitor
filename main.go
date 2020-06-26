@@ -290,6 +290,7 @@ func processCodeBuildNotification(detail map[string]interface{}) error {
 	buildID := detail["build-id"].(string)
 	projectName := detail["project-name"].(string)
 	details, err := getCodeBuildDetails(buildID, maxLogLines, projectName)
+
 	if err == nil {
 		err = upsertGitHubLogComment(&details, gitHubToken)
 	}
