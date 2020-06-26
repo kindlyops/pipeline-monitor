@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"html/template"
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -25,11 +26,54 @@ type codeBuildLogInfo struct {
 type buildDetails struct {
 	owner      string
 	repo       string
-	prID       string
+	prID       int
 	commitID   string
 	logInfo    codeBuildLogInfo
 	body       string
 	commentTag string
+}
+
+type revisionInfo struct {
+	owner  string
+	repo   string
+	commit string
+}
+
+func parseRepoURL(revisionURL string) (revisionInfo, error) {
+	// grab the github repo and owner from the repo URL, which looks like
+	// "https://github.com/owner/repo.git"
+	u, err := url.Parse(revisionURL)
+	if err != nil {
+		err = fmt.Errorf("failed to parse revision URL: %s", err.Error())
+		return revisionInfo{}, err
+	}
+
+	var commitMatcher = regexp.MustCompile(`/(?P<owner>[\w-]+)/(?P<repo>[\w-]+)\.git$`)
+
+	var expectedMatches = commitMatcher.NumSubexp() + 1
+
+	match := commitMatcher.FindStringSubmatch(u.Path)
+
+	if len(match) != expectedMatches {
+		err = fmt.Errorf("failed to parse revision URL, expected %v matches for %s and got %v",
+			expectedMatches, u.Path, len(match))
+		return revisionInfo{}, err
+	}
+
+	matches := make(map[string]string)
+
+	for i, name := range commitMatcher.SubexpNames() {
+		if i != 0 && name != "" {
+			matches[name] = match[i]
+		}
+	}
+
+	info := revisionInfo{
+		owner: matches["owner"],
+		repo:  matches["repo"],
+	}
+
+	return info, nil
 }
 
 func getCodeBuildLog(sess *session.Session, info codeBuildLogInfo, limit int) (string, error) {
@@ -74,12 +118,21 @@ func getCodeBuildDetails(buildId string, limit int, projectName string) (buildDe
 		return data, fmt.Errorf("this only works with Source.Type == GITHUB, found Source.Type == %s", *build.Source.Type)
 	}
 
+	info, err := parseRepoURL(*build.Source.Location)
+	if err != nil {
+		return data, fmt.Errorf("could not parse source location data: %s", err)
+	}
+
 	data.commitID = *build.ResolvedSourceVersion
-	data.repo = strings.TrimSuffix(*build.Source.Location, ".git")
+	data.owner = info.owner
+	data.repo = info.repo
 	data.logInfo.groupName = *build.Logs.GroupName
 	data.logInfo.streamName = *build.Logs.StreamName
 	data.logInfo.deepLink = *build.Logs.DeepLink
 	data.prID, err = parsePrId(*build.SourceVersion)
+	if err != nil {
+		return data, fmt.Errorf("error parsing PR id: %s", err)
+	}
 	data.commentTag = "PIPELINE_MONITOR_GENERATED_LOG_COMMENT_" + strings.ToUpper(projectName)
 	logBody, err := getCodeBuildLog(sess, data.logInfo, limit)
 	if err != nil {
@@ -93,10 +146,8 @@ func getCodeBuildDetails(buildId string, limit int, projectName string) (buildDe
 		"projectName":    projectName,
 		"tripleBacktick": "```",
 	}
+	commentHiddenTag := fmt.Sprintf("<!-- %s -->\n", data.commentTag)
 	commentTemplate := `
-<!--
-{{.commentTag}}
--->
 ## First {{.limit}} lines of {{.projectName}} latest build log
 <details>
   <summary>Click to expand the latest build log!</summary>
@@ -113,12 +164,13 @@ func getCodeBuildDetails(buildId string, limit int, projectName string) (buildDe
 	if err != nil {
 		return data, fmt.Errorf("error formatting comment template: %s", err)
 	}
-	data.body = body.String()
+	// commentHiddenTag must be separate because go templates strip HTML comments
+	data.body = commentHiddenTag + body.String()
 
 	return data, err
 }
 
-func parsePrId(sourceVersion string) (string, error) {
+func parsePrId(sourceVersion string) (int, error) {
 	// grab the github repo and owner from the CodeBuild SourceVersion,
 	// which looks like "pr/39"
 	// this only works if CodeBuild is configured to build on event types
@@ -135,10 +187,14 @@ func parsePrId(sourceVersion string) (string, error) {
 	if len(match) != expectedMatches {
 		err := fmt.Errorf("failed to parse SourceVersion, expected %v matches for %s and got %v",
 			expectedMatches, sourceVersion, len(match))
-		return "", err
+		return -1, err
+	}
+	number, err := strconv.Atoi(match[1])
+	if err != nil {
+		return -1, err
 	}
 
-	return match[1], nil
+	return number, nil
 }
 
 func upsertGitHubLogComment(details *buildDetails, token string) error {
@@ -148,20 +204,29 @@ func upsertGitHubLogComment(details *buildDetails, token string) error {
 		&oauth2.Token{AccessToken: token},
 	)
 	tc := oauth2.NewClient(ctx, ts)
-	_ = github.NewClient(tc)
+	client := github.NewClient(tc)
 
 	// iterate PR comments
+	opt := &github.IssueListCommentsOptions{Sort: "updated", Direction: "desc"}
+	comments, _, err := client.Issues.ListComments(ctx, details.owner, details.repo, details.prID, opt)
+	if err != nil {
+		return err
+	}
 
-	// Found comment with tag?
-	// update comment
-	// else insert new comment
-	// _, _, err := client.Issues.CreateComment(
-	// 	context.Background(),
-	// )
+	var existingCommentID int64
+	for _, comment := range comments {
+		if strings.Contains(*comment.Body, details.commentTag) {
+			existingCommentID = *comment.ID
+			break
+		}
+	}
 
-	// if err != nil {
-	// 	err = fmt.Errorf("error creating GitHub commit status: %s", err)
-	// }
+	comment := &github.IssueComment{Body: &details.body}
+	if existingCommentID != 0 {
+		_, _, err = client.Issues.EditComment(ctx, details.owner, details.repo, existingCommentID, comment)
+	} else {
+		_, _, err = client.Issues.CreateComment(ctx, details.owner, details.repo, details.prID, comment)
+	}
 
-	return nil
+	return err
 }

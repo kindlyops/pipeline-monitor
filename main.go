@@ -82,49 +82,6 @@ type executionDetails struct {
 	pipelineName string
 }
 
-type revisionInfo struct {
-	owner  string
-	repo   string
-	commit string
-}
-
-func parseRepoURL(revisionURL string) (revisionInfo, error) {
-	// grab the github repo and owner from the repo URL, which looks like
-	// "https://github.com/owner/repo.git"
-	u, err := url.Parse(revisionURL)
-	if err != nil {
-		err = fmt.Errorf("failed to parse revision URL: %s", err.Error())
-		return revisionInfo{}, err
-	}
-
-	var commitMatcher = regexp.MustCompile(`/(?P<owner>[\w-]+)/(?P<repo>[\w-]+)\.git$`)
-
-	var expectedMatches = commitMatcher.NumSubexp() + 1
-
-	match := commitMatcher.FindStringSubmatch(u.Path)
-
-	if len(match) != expectedMatches {
-		err = fmt.Errorf("failed to parse revision URL, expected %v matches for %s and got %v",
-			expectedMatches, u.Path, len(match))
-		return revisionInfo{}, err
-	}
-
-	matches := make(map[string]string)
-
-	for i, name := range commitMatcher.SubexpNames() {
-		if i != 0 && name != "" {
-			matches[name] = match[i]
-		}
-	}
-
-	info := revisionInfo{
-		owner: matches["owner"],
-		repo:  matches["repo"],
-	}
-
-	return info, nil
-}
-
 func parseRevisionURL(revisionURL string) (revisionInfo, error) {
 	// grab the github repo and owner from the revision URL, which looks like
 	// "https://github.com/owner/repo/commit/8873423234re34ea1daewerwe93f92d1557a7b9b"

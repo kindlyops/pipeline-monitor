@@ -10,7 +10,7 @@ func main() {
 
 	fmt.Println("Running temp log diagnostic")
 
-	buildID := "pipeline-monitor-lint:e6632df9-932d-4f06-9fc5-3723a132361a"
+	buildID := "pipeline-monitor-lint:b1ce3a16-c26e-40c8-8af1-8b9da5b1b51a"
 	maxLogLines := 10000
 	details, err := getCodeBuildDetails(buildID, maxLogLines, "fake-project-name")
 	if err != nil {
@@ -18,9 +18,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Printf(details.body)
-
 	token := os.Getenv("GITHUB_TOKEN")
-
 	err = upsertGitHubLogComment(&details, token)
+	if err != nil {
+		fmt.Printf("Error adding comment: %s", err.Error())
+	}
 }

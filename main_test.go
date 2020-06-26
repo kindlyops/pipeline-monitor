@@ -83,7 +83,7 @@ func TestParsePrId(t *testing.T) {
 		t.Error("error in parsePrId", err)
 	}
 
-	if result != "39" {
+	if result != 39 {
 		t.Error("got wrong id", result)
 	}
 }
