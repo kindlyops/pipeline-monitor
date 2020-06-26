@@ -1,5 +1,7 @@
 # pipeline-monitor
 
+![lint reviewdog](https://github.com/kindlyops/pipeline-monitor/workflows/lint%20reviewdog/badge.svg)
+
 The project provides CodeBuild/CodePipeline integration with GitHub for better
 developer experience.
 
