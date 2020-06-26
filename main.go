@@ -278,7 +278,7 @@ func processCodePipelineNotification(request events.CloudWatchEvent, detail map[
 	return err
 }
 
-func processCodeBuildNotification(request events.CloudWatchEvent, detail map[string]interface{}) error {
+func processCodeBuildNotification(detail map[string]interface{}) error {
 	currentPhase := detail["current-phase"].(string)
 	if currentPhase != "COMPLETED" {
 		log.Printf("ignoring build notification for phase %s", currentPhase)
@@ -315,7 +315,7 @@ func HandleRequest(ctx context.Context, request events.CloudWatchEvent) error {
 	case "CodePipeline Action Execution State Change":
 		err = processCodePipelineNotification(request, detail)
 	case "CodeBuild Build State Change": // these come from PR builds
-		err = processCodeBuildNotification(request, detail)
+		err = processCodeBuildNotification(detail)
 	default:
 		log.Printf("Ignoring %s\n", request.DetailType)
 	}
