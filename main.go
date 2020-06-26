@@ -289,14 +289,13 @@ func processCodeBuildNotification(request events.CloudWatchEvent, detail map[str
 	}
 
 	// the CodeBuild event notifications have inconsistent information
-	// (data fields only contain PR ID on retry, not on webhook-triggered build)
-	// call into the CodeBuild API to get sufficient info
+	// data fields only contain PR ID when configured for PR_* events, not PUSH
 	buildId := detail["build-id"].(string)
 	projectName := detail["project-name"].(string)
 	details, err := getCodeBuildDetails(buildId, maxLogLines, projectName)
-	log.Printf("codebuildDetails: %v", details)
-	log.Printf("full event is %s\n", request.Detail)
-
+	if err == nil {
+		err = upsertGitHubLogComment(&details, gitHubToken)
+	}
 	return err
 }
 
