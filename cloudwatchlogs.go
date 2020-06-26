@@ -141,6 +141,7 @@ func getCodeBuildDetails(buildID string, limit int, projectName string) (buildDe
 
 	data.commentTag = "PIPELINE_MONITOR_GENERATED_LOG_COMMENT_" + strings.ToUpper(projectName)
 	logBody, err := getCodeBuildLog(sess, data.logInfo, limit)
+
 	if err != nil {
 		return data, fmt.Errorf("error retrieving codebuild logs for %s: %s", *build.Logs.DeepLink, err)
 	}
@@ -170,6 +171,7 @@ func getCodeBuildDetails(buildID string, limit int, projectName string) (buildDe
 
 	t := template.Must(template.New("t1").Parse(commentTemplate))
 	err = t.Execute(&body, commentData)
+
 	if err != nil {
 		return data, fmt.Errorf("error formatting comment template: %s", err)
 	}
@@ -198,6 +200,7 @@ func parsePrID(sourceVersion string) (int, error) {
 			expectedMatches, sourceVersion, len(match))
 		return -1, err
 	}
+
 	number, err := strconv.Atoi(match[1])
 	if err != nil {
 		return -1, err

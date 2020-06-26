@@ -217,7 +217,6 @@ func updateGitHubStatus(status *statusInfo) error {
 }
 
 func processCodePipelineNotification(request events.CloudWatchEvent, detail map[string]interface{}) error {
-
 	// we process Action execution state changes so that we can get granular
 	// status updates on deploys of individual services or stacks
 	log.Printf("Processing %s", request.DetailType)
@@ -288,12 +287,13 @@ func processCodeBuildNotification(request events.CloudWatchEvent, detail map[str
 
 	// the CodeBuild event notifications have inconsistent information
 	// data fields only contain PR ID when configured for PR_* events, not PUSH
-	buildId := detail["build-id"].(string)
+	buildID := detail["build-id"].(string)
 	projectName := detail["project-name"].(string)
-	details, err := getCodeBuildDetails(buildId, maxLogLines, projectName)
+	details, err := getCodeBuildDetails(buildID, maxLogLines, projectName)
 	if err == nil {
 		err = upsertGitHubLogComment(&details, gitHubToken)
 	}
+
 	return err
 }
 
