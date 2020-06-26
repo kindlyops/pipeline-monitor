@@ -83,18 +83,21 @@ func getCodeBuildLog(sess *session.Session, info codeBuildLogInfo, limit int) (s
 		LogGroupName:  aws.String(info.groupName),
 		LogStreamName: aws.String(info.streamName),
 	})
+
 	if err != nil {
 		return "", err
 	}
 
 	var body strings.Builder
+
 	for _, event := range resp.Events {
 		body.WriteString(*event.Message)
 	}
+
 	return body.String(), nil
 }
 
-func getCodeBuildDetails(buildId string, limit int, projectName string) (buildDetails, error) {
+func getCodeBuildDetails(buildID string, limit int, projectName string) (buildDetails, error) {
 	sess := session.Must(session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
 	}))
@@ -104,15 +107,16 @@ func getCodeBuildDetails(buildId string, limit int, projectName string) (buildDe
 	svc := codebuild.New(sess)
 
 	apiInput := &codebuild.BatchGetBuildsInput{
-		Ids: []*string{aws.String(buildId)},
+		Ids: []*string{aws.String(buildID)},
 	}
 
 	var data buildDetails
 
 	result, err := svc.BatchGetBuilds(apiInput)
 	if err != nil || len(result.Builds) != 1 {
-		return data, fmt.Errorf("unexpected %d results for build-id: %s", len(result.Builds), buildId)
+		return data, fmt.Errorf("unexpected %d results for build-id: %s", len(result.Builds), buildID)
 	}
+
 	build := result.Builds[0]
 	if *build.Source.Type != "GITHUB" {
 		return data, fmt.Errorf("this only works with Source.Type == GITHUB, found Source.Type == %s", *build.Source.Type)
@@ -129,16 +133,19 @@ func getCodeBuildDetails(buildId string, limit int, projectName string) (buildDe
 	data.logInfo.groupName = *build.Logs.GroupName
 	data.logInfo.streamName = *build.Logs.StreamName
 	data.logInfo.deepLink = *build.Logs.DeepLink
-	data.prID, err = parsePrId(*build.SourceVersion)
+	data.prID, err = parsePrID(*build.SourceVersion)
+
 	if err != nil {
 		return data, fmt.Errorf("error parsing PR id: %s", err)
 	}
+
 	data.commentTag = "PIPELINE_MONITOR_GENERATED_LOG_COMMENT_" + strings.ToUpper(projectName)
 	logBody, err := getCodeBuildLog(sess, data.logInfo, limit)
 	if err != nil {
 		return data, fmt.Errorf("error retrieving codebuild logs for %s: %s", *build.Logs.DeepLink, err)
 	}
-	var commentData = map[string]string{
+
+	commentData := map[string]string{
 		"body":           logBody,
 		"commentTag":     data.commentTag,
 		"deepLink":       data.logInfo.deepLink,
@@ -158,8 +165,10 @@ func getCodeBuildDetails(buildId string, limit int, projectName string) (buildDe
 {{.tripleBacktick}}
 </details>
 `
-	t := template.Must(template.New("t1").Parse(commentTemplate))
+
 	var body strings.Builder
+
+	t := template.Must(template.New("t1").Parse(commentTemplate))
 	err = t.Execute(&body, commentData)
 	if err != nil {
 		return data, fmt.Errorf("error formatting comment template: %s", err)
@@ -170,7 +179,7 @@ func getCodeBuildDetails(buildId string, limit int, projectName string) (buildDe
 	return data, err
 }
 
-func parsePrId(sourceVersion string) (int, error) {
+func parsePrID(sourceVersion string) (int, error) {
 	// grab the github repo and owner from the CodeBuild SourceVersion,
 	// which looks like "pr/39"
 	// this only works if CodeBuild is configured to build on event types
@@ -214,6 +223,7 @@ func upsertGitHubLogComment(details *buildDetails, token string) error {
 	}
 
 	var existingCommentID int64
+
 	for _, comment := range comments {
 		if strings.Contains(*comment.Body, details.commentTag) {
 			existingCommentID = *comment.ID
@@ -222,6 +232,7 @@ func upsertGitHubLogComment(details *buildDetails, token string) error {
 	}
 
 	comment := &github.IssueComment{Body: &details.body}
+
 	if existingCommentID != 0 {
 		_, _, err = client.Issues.EditComment(ctx, details.owner, details.repo, existingCommentID, comment)
 	} else {

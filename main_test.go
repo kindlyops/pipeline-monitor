@@ -78,9 +78,9 @@ func TestParsePrId(t *testing.T) {
 	t.Parallel()
 
 	sourceVersion := "pr/39"
-	result, err := parsePrId(sourceVersion)
+	result, err := parsePrID(sourceVersion)
 	if err != nil {
-		t.Error("error in parsePrId", err)
+		t.Error("error in parsePrID", err)
 	}
 
 	if result != 39 {
