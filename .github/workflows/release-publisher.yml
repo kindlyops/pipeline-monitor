@@ -16,9 +16,9 @@ jobs:
           sudo chmod +x /usr/local/bin/bazel
       - name: bazel build
         run: bazel build //...
-      - name: Environment debug
+      - name: Artifact debug
         run: |
-          env
+          ls -l bazel-bin/
       - name: Upload release binaries
         uses: skx/github-action-publish-binaries@master
         env:

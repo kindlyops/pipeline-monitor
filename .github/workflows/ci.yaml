@@ -39,4 +39,4 @@ jobs:
       - name: Environment debug
         run: |
           env
-          ls -l bazel-bin
+          ls -l bazel-bin/
