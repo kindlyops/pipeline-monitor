@@ -1,5 +1,12 @@
 # pipeline-monitor
-lambda function to monitor AWS CodePipeline and annotate GitHub commits with status of pipeline action executions
+
+![lint reviewdog](https://github.com/kindlyops/pipeline-monitor/workflows/lint%20reviewdog/badge.svg)
+
+The project provides CodeBuild/CodePipeline integration with GitHub for better
+developer experience.
+
+1. Annotate GitHub commits with status of CodePipeline action executions - this is typically deployment pipelines
+2. Post CodeBuild logs as PR comments (linters, tests, builds)
 
 ## build and test
 

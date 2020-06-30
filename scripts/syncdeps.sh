@@ -18,5 +18,3 @@ go mod tidy
 go mod vendor
 # after we have new packages in vendor, run gazelle to generate BUILD files
 $gazelle
-# also run gazelle update-repos to fix the go_repositories rules in WORKSPACE to match go.mod
-$gazelle update-repos -from_file=go.mod

@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -26,9 +27,18 @@ import (
 // load the GitHub Oauth token when the lambda is loaded, not on every execution
 // this reduces the call volume into SecretsManager
 var gitHubToken string
+var maxLogLines int
 
 type secretToken struct {
 	Token string `json:"token"`
+}
+
+func getMaxLogLines() int {
+	i, err := strconv.Atoi(os.Getenv("MAX_LOG_LINES"))
+	if err != nil || i > 10000 {
+		i = 10000
+	}
+	return i
 }
 
 func getGitHubToken() (string, error) {
@@ -68,12 +78,6 @@ func getGitHubToken() (string, error) {
 type executionDetails struct {
 	executionID  string
 	pipelineName string
-}
-
-type revisionInfo struct {
-	owner  string
-	repo   string
-	commit string
 }
 
 func parseRevisionURL(revisionURL string) (revisionInfo, error) {
@@ -212,27 +216,9 @@ func updateGitHubStatus(status *statusInfo) error {
 	return err
 }
 
-// HandleRequest is the main entry point for the lambda processing.
-func HandleRequest(ctx context.Context, request events.CloudWatchEvent) error {
-	// unmarshal detail
-	// https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/EventTypes.html#codepipeline_event_type
-	var holder interface{}
-	err := json.Unmarshal(request.Detail, &holder)
-
-	if err != nil {
-		return fmt.Errorf("unable to unmarshal CodePipelineEvent detail: %s", err)
-	}
-
-	detail := holder.(map[string]interface{})
-
+func processCodePipelineNotification(request events.CloudWatchEvent, detail map[string]interface{}) error {
 	// we process Action execution state changes so that we can get granular
 	// status updates on deploys of individual services or stacks
-	var actionExecutionDetail = "CodePipeline Action Execution State Change"
-	if request.DetailType != actionExecutionDetail {
-		log.Printf("Ignoring %s", request.DetailType)
-		return nil
-	}
-
 	log.Printf("Processing %s", request.DetailType)
 
 	details := executionDetails{
@@ -286,7 +272,53 @@ func HandleRequest(ctx context.Context, request events.CloudWatchEvent) error {
 	err = updateGitHubStatus(&commitStatus)
 
 	if err != nil {
-		log.Printf("Error updating GitHub commit status: %s", err.Error())
+		log.Printf("error updating GitHub commit status: %s", err.Error())
+	}
+
+	return err
+}
+
+func processCodeBuildNotification(detail map[string]interface{}) error {
+	currentPhase := detail["current-phase"].(string)
+	if currentPhase != "COMPLETED" {
+		log.Printf("ignoring build notification for phase %s", currentPhase)
+		return nil
+	}
+
+	// the CodeBuild event notifications have inconsistent information
+	// data fields only contain PR ID when configured for PR_* events, not PUSH
+	buildID := detail["build-id"].(string)
+	projectName := detail["project-name"].(string)
+	details, err := getCodeBuildDetails(buildID, maxLogLines, projectName)
+
+	if err == nil {
+		err = upsertGitHubLogComment(&details, gitHubToken)
+	}
+
+	return err
+}
+
+// HandleRequest is the main entry point for the lambda processing.
+func HandleRequest(ctx context.Context, request events.CloudWatchEvent) error {
+	// unmarshal detail
+	// https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/EventTypes.html#codepipeline_event_type
+	var holder interface{}
+
+	err := json.Unmarshal(request.Detail, &holder)
+
+	if err != nil {
+		return fmt.Errorf("unable to unmarshal Lambda Event detail: %s", err)
+	}
+
+	detail := holder.(map[string]interface{})
+
+	switch request.DetailType {
+	case "CodePipeline Action Execution State Change":
+		err = processCodePipelineNotification(request, detail)
+	case "CodeBuild Build State Change": // these come from PR builds
+		err = processCodeBuildNotification(detail)
+	default:
+		log.Printf("Ignoring %s\n", request.DetailType)
 	}
 
 	return err
@@ -296,6 +328,7 @@ func main() {
 	// initialize secrets on lambda boot, not on every invocation
 	var err error
 	gitHubToken, err = getGitHubToken()
+	maxLogLines = getMaxLogLines()
 
 	if err != nil {
 		log.Printf("Error loading github access token: %s", err.Error())

@@ -34,3 +34,4 @@ linters:
     # prealloc is not recommended by `golangci-lint` developers.
     - prealloc
     - gochecknoglobals
+    - goerr113
