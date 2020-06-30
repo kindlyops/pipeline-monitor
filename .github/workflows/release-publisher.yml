@@ -24,4 +24,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          args: bazel-bin/lambda_deploy.zip
+          args: 'bazel-bin/lambda_deploy.zip'
